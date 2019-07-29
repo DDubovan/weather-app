@@ -1,7 +1,6 @@
 import React, { Component } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import axios from "axios";
-import Logo from "./components/Logo";
+import { BrowserRouter as Router, Route } from "react-router-dom";
 import Search from "./components/Search";
 import WeatherInfo from "./components/WeatherInfo";
 
@@ -17,35 +16,40 @@ export default class App extends Component {
     pressure: undefined,
     descrip: undefined,
     sunRise: undefined,
-    sunSet: undefined
+    sunSet: undefined,
+    photo: undefined
   };
 
-  // componentWillMount = () => {
-  getWeatherData = async e => {
+  getData = async e => {
     e.preventDefault();
-    const cityInput = e.target.city.value;
-    const countryInput = e.target.country.value;
+    const city = e.target.city.value;
+    const country = e.target.country.value;
     const key = "5fe9e3d237aef453c0ceffb9dafec951";
-    const request = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${cityInput},${countryInput}&APPID=${key}&units=metric`
+    const weatherReq = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${city},${country}&APPID=${key}&units=metric`
     );
-    const data = await request.json();
-    if (cityInput && countryInput) {
-      console.log(data);
+    const photoReq = await fetch(
+      `https://api.teleport.org/api/urban_areas/slug:${city}/images/`
+    );
+    const wData = await weatherReq.json();
+    const pData = await photoReq.json();
+
+    if (city && country) {
       this.setState({
-        city: data.name,
-        country: data.sys.country,
-        temp: data.main.temp,
-        tempMax: data.main.temp_max,
-        tempMin: data.main.temp_min,
-        humidity: data.main.humidity,
-        wind: data.wind.speed,
-        pressure: data.main.pressure,
-        descrip: data.weather[0].description,
-        sunRise: data.sys.sunrise,
-        sunSet: data.sys.sunset
+        city: wData.name,
+        country: wData.sys.country,
+        temp: wData.main.temp,
+        tempMax: wData.main.temp_max,
+        tempMin: wData.main.temp_min,
+        humidity: wData.main.humidity,
+        wind: wData.wind.speed,
+        windDirection: wData.wind.deg,
+        pressure: wData.main.pressure,
+        descrip: wData.weather[0].description,
+        sunRise: wData.sys.sunrise,
+        sunSet: wData.sys.sunset,
+        photo: pData.photos[0].image.web
       });
-      console.log(this.state.city);
     } else {
       alert("Please enter a city and country.");
     }
@@ -54,20 +58,16 @@ export default class App extends Component {
   render() {
     return (
       <div className="d-flex flex-column flex-wrap w-100 h-100 justify-content-center align-content-center">
-        <Logo />
-        <Search getWeatherData={this.getWeatherData} />
-        <WeatherInfo
-          city={this.state.city}
-          country={this.state.country}
-          temp={this.state.temp}
-          tempMax={this.state.tempMax}
-          tempMin={this.state.tempMin}
-          humidity={this.state.humidity}
-          wind={this.state.wind}
-          pressure={this.state.pressure}
-          descrip={this.state.descrip}
-          sunRise={this.state.sunRise}
-          sunSet={this.state.sunSet}
+        <Route
+          exact
+          to="/"
+          render={props => (
+            <Search {...props} getData={this.getData} all={this.state} />
+          )}
+        />
+        <Route
+          to="/weather/:citycountry"
+          render={props => <WeatherInfo {...props} all={this.state} />}
         />
       </div>
     );
